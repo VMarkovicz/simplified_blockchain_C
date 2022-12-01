@@ -17,8 +17,6 @@ struct BlocoMinerado{
     unsigned char hash[SHA256_DIGEST_LENGTH];
 }typedef BlocoMinerado;
 
-
-
 void minerarBloco(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado){
 
     unsigned char hash[SHA256_DIGEST_LENGTH];//vetor que armazenará o resultado do hash. Tamanho definido pela libssl
@@ -85,7 +83,8 @@ BlocoMinerado buscaBloco(int numeroBloco){//função que busca um bloco no arqui
 }
 
 void imprimirBloco(BlocoMinerado *blocoMinerado){//funçao que imprime o bloco
-    printf(" Bloco %u - Nonce: %u - Hash:  -", blocoMinerado->bloco.numero, blocoMinerado->bloco.nonce);
+    
+    printf(" Bloco %u - Nonce: %u\nHash:  -", blocoMinerado->bloco.numero, blocoMinerado->bloco.nonce);
     for(int i = 0; i < SHA256_DIGEST_LENGTH; i++){
         printf("%02x", blocoMinerado->hash[i]);
     } 
@@ -113,16 +112,34 @@ void imprimirHash(unsigned char *hash){//função que imprime um hash
     printf("\n");
 }
 
+void imprimirSaldos(unsigned int saldoBitcoin[256]){
+    for(int i = 1; i < 256; i++){
+        printf("Saldo da carteira %d: %u\n", i, saldoBitcoin[i]);
+    }
+}
+
+void excluirArquivos(){
+    
+    int exclui = 1;
+    printf("0 - NAO EXCLUIR ARQUIVOS ANTERIORES\n1 - EXCLUIR ARQUIVOS ANTERIORES\n");
+    scanf("%d", &exclui);
+
+    if(exclui){
+        remove("blockchain.bin");
+    }
+}
 
 int main() {
-
+    
+    excluirArquivos();
+    
     BlocoNaoMinerado blocoAMinerar;
     BlocoMinerado blocoMinerado;
-    
     MTRand randNumber = seedRand(1234567);//objeto gerador com semente 1234567
-    
     unsigned char guarda_hash[SHA256_DIGEST_LENGTH];
-    
+    unsigned int saldoBitcoin[256];
+    memset(saldoBitcoin, 0, sizeof(unsigned int)*256);
+
     //pedir ao usuario quantos blocos deseja minerar
     int qtdBlocos;
     printf("Quantos blocos deseja minerar? ");
@@ -150,6 +167,15 @@ int main() {
             blocoAMinerar.data[i] = (unsigned char) genRandLong(&randNumber) % 256;//gera aleatorio de 0 a 255
             blocoAMinerar.data[i+1] = (unsigned char) genRandLong(&randNumber) % 256;//gera aleatorio de 0 a 255
             blocoAMinerar.data[i+2] = (unsigned char) (1 + genRandLong(&randNumber) % 51);//gera aleatorio de 1 a 50
+            
+            if(saldoBitcoin[blocoAMinerar.data[i]] >= blocoAMinerar.data[i+2]){
+                saldoBitcoin[blocoAMinerar.data[i]] -= blocoAMinerar.data[i+2];
+            }
+            else{
+                saldoBitcoin[blocoAMinerar.data[i]] = 0;
+            }
+            saldoBitcoin[blocoAMinerar.data[i+1]] += blocoAMinerar.data[i+2];
+
         }
 
         minerarBloco(&blocoAMinerar, &blocoMinerado);
@@ -158,8 +184,11 @@ int main() {
 
         memcpy((vetorBlocosMinerados+num_bloco), &blocoMinerado, sizeof(BlocoMinerado));
     }
-    
+
     salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
+
+
+
 
     BlocoMinerado blocoMineradoqueeucriei0 = buscaBloco(0);
 
@@ -172,6 +201,8 @@ int main() {
     BlocoMinerado blocoMineradoqueeucriei2 = buscaBloco(2);
 
     imprimirBloco(&blocoMineradoqueeucriei2);
+
+    imprimirSaldos(saldoBitcoin);
 
     return 0;
 }
