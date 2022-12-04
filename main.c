@@ -17,6 +17,13 @@ struct BlocoMinerado{
     unsigned char hash[SHA256_DIGEST_LENGTH];
 }typedef BlocoMinerado;
 
+struct ABP{
+    unsigned int saldo;
+    unsigned char endereco;
+    struct ABP *esq;
+    struct ABP *dir;
+} typedef ABP;
+
 void minerarBloco(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado){
 
     unsigned char hash[SHA256_DIGEST_LENGTH];//vetor que armazenará o resultado do hash. Tamanho definido pela libssl
@@ -118,6 +125,54 @@ void imprimirSaldos(unsigned int saldoBitcoin[256]){
     }
 }
 
+unsigned int verificaSaldoBitcoin(unsigned char endereco, unsigned int saldoBitcoin[256]){//função que verifica o saldo de uma carteira
+    printf("Endereço %u tem %u bitcoins\n", endereco, saldoBitcoin[endereco]); 
+
+    return saldoBitcoin[endereco];
+}
+
+unsigned char enderecoMaisBitcoin(unsigned int saldoBitcoin[256]){
+
+    unsigned int max = saldoBitcoin[0];
+    unsigned char pos = 0;
+    for(int i = 1; i < 256; i++){
+        if(saldoBitcoin[i] > max){
+            max = saldoBitcoin[i];
+            pos = i;
+        }
+    }
+    printf("O endereco com maior saldo de BitCoin é %u, com %u BitCoins.\n", pos, max);
+    return  pos;
+}
+
+
+ABP *inserirABP(ABP *raiz, unsigned char endereco, unsigned int saldoBitcoin[256]){//função que insere um nó na árvore binária de busca
+
+    if(raiz == NULL){
+        raiz = (ABP *)malloc(sizeof(ABP));
+        raiz->endereco = endereco;
+        raiz->saldo = saldoBitcoin[endereco];
+        raiz->esq = NULL;
+        raiz->dir = NULL;
+    }
+    else if(saldoBitcoin[endereco] < raiz->saldo){
+        raiz->esq = inserirABP(raiz->esq, endereco, saldoBitcoin);
+    }
+    else{
+        raiz->dir = inserirABP(raiz->dir, endereco, saldoBitcoin);
+    }
+    return raiz;
+}
+
+void imprimirABP(ABP *raiz){//função que imprime a árvore binária de busca em ordems
+
+    if(raiz != NULL){
+        imprimirABP(raiz->esq);
+        printf("Endereço: %u - Saldo: %u\n", raiz->endereco, raiz->saldo);
+        imprimirABP(raiz->dir);
+    }
+}
+
 void excluirArquivos(){
     
     int exclui = 1;
@@ -139,6 +194,7 @@ int main() {
     unsigned char guarda_hash[SHA256_DIGEST_LENGTH];
     unsigned int saldoBitcoin[256];
     memset(saldoBitcoin, 0, sizeof(unsigned int)*256);
+    ABP *raiz = NULL;
 
     //pedir ao usuario quantos blocos deseja minerar
     int qtdBlocos;
@@ -188,8 +244,6 @@ int main() {
     salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
 
 
-
-
     BlocoMinerado blocoMineradoqueeucriei0 = buscaBloco(0);
 
     imprimirBloco(&blocoMineradoqueeucriei0);
@@ -203,6 +257,17 @@ int main() {
     imprimirBloco(&blocoMineradoqueeucriei2);
 
     imprimirSaldos(saldoBitcoin);
+
+    enderecoMaisBitcoin(saldoBitcoin);
+
+    for (unsigned int i = 0; i < 256; i++)
+    {
+        raiz = inserirABP(raiz, i, saldoBitcoin);
+    }
+    
+
+    imprimirABP(raiz);
+
 
     return 0;
 }
@@ -236,36 +301,19 @@ int main() {
 ⣿⡿⠋⠁⠀⠀⢀⣀⣠⡴⣸⣿⣇⡄⠀⠀⠀⠀⢀⡿⠄⠙⠛⠀⣀⣠⣤⣤⠄⠀
 
 */
+
 /*
-
-c) CONDIÇÃO DE MINERAÇÃO E ARMAZENAMENTO EM ARQUIVO
-Para este projeto, um bloco será considerado minerado se as três primeiras posições de seu valor hash forem iguais a zero (decimal). Caso a condição NÃO seja satisfeita, o valor nonce deverá 
-ser incrementado e um nova tentativa deve ser feita invocando a função SHA256 que produzirá outro valor no vetor hash. Quando a condição for satisfeita, o bloco junto com seu hash minerado 
-válido formarão um bloco minerado e poderão ser gravados em arquivo. Contudo, seguindo as boas práticas para escrita eficiente em arquivo, convêm realizar gravações/leituras a cada 512 bytes 
-(no caso de SSDs) ou 4096 bytes (no caso de HDs magnéticos) de informação acumuladas. Por exemplo, se considerarmos arquivo em SSD, um bloco minerado (isto é, bloco não minerado + seu 
-hash válido), resulta em 256 bytes. Assim, após minerar um bloco, você deverá gravá-lo numa variável do tipo BlocoMinerado até que outro bloco seja minerado e, assim, ambos possam ser gravados 
-em um arquivo binário através da função fwrite (pesquise o uso desta função). A struct de uma variável do tipo bloco minerado é:
-
-struct BlocoMinerado
-{
-  BlocoNaoMinerado bloco;//neste campo você pode atribuir a variável blocoAMinerar diretamente
-  unsigned char hash[SHA256_DIGEST_LENGTH]; //Neste campo você põe o hash válido da variável blocoAMinerar
-};
-typedef struct BlocoMinerado BlocoMinerado;
-
-
 
 ===============================> CONSULTAS QUE DEVEM SER SUPORTADAS PELO CÓDIGO FONTE
 Após a mineração, O programa simulador em C (ambiente gcc/linux) deverá suportar os seguintes consultas LENDO OS DADOS DIRETAMENTE DO ARQUIVO PRODUZIDO:
+
 1.Dado o número do bloco imprimir todos seus dados, incluindo o hash válido no formato hexadecimal.
+
 2.Quantos bitcoins um dado endereço tem?
+
 3.Qual o endereço tem mais bitcoins?
+
 4.Listar endereços com respectivas quantidades de bitcoins em ordem crescente.
-DICA: você pode manter um vetor unsigned int com 256 posições inicializadas com zero para ir acumulando o saldo das carteiras durante a simulação. Por exemplo, se numa transação o endereço 100 
-envia 1 bitcoin ao endereço 4, você credita 1 bitcoin na posição 4 do vetor e debita 1 da posição 100 (se o débito levar a posição a ficar negativa, apenas deixe zerada para evitar saldos 
-negativos).
-
-
 
 RESTRIÇÕES.
 . Para dúvidas cujas respostas não se encontrem neste enunciado, a equipe deverá ter iniciativa para tomar suas próprias decisões (velando sempre pela eficiência do código) e sujeitando tais 
