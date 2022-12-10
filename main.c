@@ -36,7 +36,7 @@ void minerarBloco(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado)
 
     while (hash[0] != 0 || hash[1] != 0 || hash[2] != 0)
     { // enquanto o hash não começar com 3 zeros
-        if (blocoAMinerar->nonce <= 4294967295)
+        if (blocoAMinerar->nonce < 4294967295)
         {
             blocoAMinerar->nonce++;                                               // incrementa o nonce
             SHA256((unsigned char *)blocoAMinerar, sizeof(*blocoAMinerar), hash); // gera hash do bloco
@@ -63,7 +63,7 @@ void minerarBlocoMenorComplex(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *bl
 
     while (hash[0] != 0 || hash[1] != 0)
     { // enquanto o hash não começar com 2 zeros
-        if (blocoAMinerar->nonce <= 4294967295)
+        if (blocoAMinerar->nonce < 4294967295)
         {
             blocoAMinerar->nonce++;                                               // incrementa o nonce
             SHA256((unsigned char *)blocoAMinerar, sizeof(*blocoAMinerar), hash); // gera hash do bloco
@@ -80,6 +80,7 @@ void minerarBlocoMenorComplex(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *bl
     // copia o hash para o bloco minerado
     memcpy(blocoMinerado->hash, hash, SHA256_DIGEST_LENGTH);
 }
+
 
 void salvarBlocoMinerado(BlocoMinerado *blocoMinerado, int qtdBlocos)
 { // função que guarda o bloco minerado em um arquivo binario
@@ -219,9 +220,6 @@ void excluirArquivos()
 
 int main()
 {
-
-    excluirArquivos();
-
     BlocoNaoMinerado blocoAMinerar;
     BlocoMinerado blocoMinerado;
     MTRand randNumber = seedRand(1234567); // objeto gerador com semente 1234567
@@ -230,97 +228,116 @@ int main()
     memset(saldoBitcoin, 0, sizeof(unsigned int) * 256);
     ABP *raiz = NULL;
 
+    printf("Bem vindo ao simulador de blockchain!\n");
+    printf("Lembre-se que voce deve salvar os blocos minerados para que eles sejam salvos na blockchain!\n");
+    printf("Se voce ja minerou alguma vez, nao esqueca de salvar o arquivo blockchain.bin para nao perder os blocos minerados anteriormente!\n");
+    printf("Mas ao minerar novamente, exclua o arquivo blockchain.bin!\n");
+
     int op = 0;
-    printf("\nMENU: \n1 - Minerar \n2 - Salvar Blocos \n3 - Imprimir Bloco \n4 - Imprimir Saldo
-    \n5 - Endereco Com Mais Bitcoins \n6 - Imprimir em Ordem Crescente");
-    scanf("%d", &op);
-    switch (op != 0)
+    while (op != 7)
     {
-    case 1:
-        // pedir ao usuario quantos blocos deseja minerar
-        int qtdBlocos;
-        printf("Quantos blocos deseja minerar? ");
-        scanf("%d", &qtdBlocos);
-
-        BlocoMinerado *vetorBlocosMinerados = (BlocoMinerado *)malloc(qtdBlocos * sizeof(BlocoMinerado)); // aloca espaço para o vetor de blocos minerados
-
-        for (int num_bloco = 0; num_bloco < qtdBlocos; num_bloco++)
+        printf("MENU: \n");
+        printf("1 - Minerar e Salvar Blocos \n");
+        printf("2 - Imprimir Bloco \n");
+        printf("3 - Imprimir Saldo \n");
+        printf("4 - Endereco Com Mais Bitcoins \n");
+        printf("5 - Imprimir em Ordem Crescente \n");
+        printf("6 - Imprimir todos os saldos \n");
+        printf("7 - Sair \n");
+        scanf("%d", &op);
+        switch (op)
         {
+        case 1:
+            // pedir ao usuario quantos blocos deseja minerar
+            excluirArquivos();
 
-            blocoAMinerar.numero = num_bloco;
-            blocoAMinerar.nonce = 0;
+            int qtdBlocos;
+            printf("Quantos blocos deseja minerar? ");
+            scanf("%d", &qtdBlocos);
 
-            if (num_bloco == 0)
+            BlocoMinerado *vetorBlocosMinerados = (BlocoMinerado *)malloc(qtdBlocos * sizeof(BlocoMinerado)); // aloca espaço para o vetor de blocos minerados
+
+            for (int num_bloco = 0; num_bloco < qtdBlocos; num_bloco++)
             {
-                memset(blocoAMinerar.hashAnterior, 0, SHA256_DIGEST_LENGTH);
-            }
-            else
-            {
-                memcpy(blocoAMinerar.hashAnterior, guarda_hash, SHA256_DIGEST_LENGTH);
-            }
 
-            unsigned char qtdTransacoes = (unsigned char)(1 + (genRandLong(&randNumber) % 61)); // gera aleatorio de 1 a 61
-            memset(blocoAMinerar.data, 0, sizeof(blocoAMinerar.data));
+                blocoAMinerar.numero = num_bloco;
+                blocoAMinerar.nonce = 0;
 
-            for (int i = 0; i < qtdTransacoes; i += 3)
-            {
-                blocoAMinerar.data[i] = (unsigned char)genRandLong(&randNumber) % 256;          // gera aleatorio de 0 a 255
-                blocoAMinerar.data[i + 1] = (unsigned char)genRandLong(&randNumber) % 256;      // gera aleatorio de 0 a 255
-                blocoAMinerar.data[i + 2] = (unsigned char)(1 + genRandLong(&randNumber) % 51); // gera aleatorio de 1 a 50
-
-                if (saldoBitcoin[blocoAMinerar.data[i]] >= blocoAMinerar.data[i + 2])
+                if (num_bloco == 0)
                 {
-                    saldoBitcoin[blocoAMinerar.data[i]] -= blocoAMinerar.data[i + 2];
+                    memset(blocoAMinerar.hashAnterior, 0, SHA256_DIGEST_LENGTH);
                 }
                 else
                 {
-                    saldoBitcoin[blocoAMinerar.data[i]] = 0;
+                    memcpy(blocoAMinerar.hashAnterior, guarda_hash, SHA256_DIGEST_LENGTH);
                 }
-                saldoBitcoin[blocoAMinerar.data[i + 1]] += blocoAMinerar.data[i + 2];
+
+                unsigned char qtdTransacoes = (unsigned char)(1 + (genRandLong(&randNumber) % 61)); // gera aleatorio de 1 a 61
+                memset(blocoAMinerar.data, 0, sizeof(blocoAMinerar.data));
+
+                for (int i = 0; i < qtdTransacoes; i += 3)
+                {
+                    blocoAMinerar.data[i] = (unsigned char)genRandLong(&randNumber) % 256;          // gera aleatorio de 0 a 255
+                    blocoAMinerar.data[i + 1] = (unsigned char)genRandLong(&randNumber) % 256;      // gera aleatorio de 0 a 255
+                    blocoAMinerar.data[i + 2] = (unsigned char)(1 + genRandLong(&randNumber) % 51); // gera aleatorio de 1 a 50
+
+                    if (saldoBitcoin[blocoAMinerar.data[i]] >= blocoAMinerar.data[i + 2])
+                    {
+                        saldoBitcoin[blocoAMinerar.data[i]] -= blocoAMinerar.data[i + 2];
+                    }
+                    else
+                    {
+                        saldoBitcoin[blocoAMinerar.data[i]] = 0;
+                    }
+                    saldoBitcoin[blocoAMinerar.data[i + 1]] += blocoAMinerar.data[i + 2];
+                }
+
+                minerarBloco(&blocoAMinerar, &blocoMinerado);
+
+                memcpy(guarda_hash, blocoMinerado.hash, SHA256_DIGEST_LENGTH);
+
+                memcpy((vetorBlocosMinerados + num_bloco), &blocoMinerado, sizeof(BlocoMinerado));
             }
+            salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
+            break;
 
-            minerarBloco(&blocoAMinerar, &blocoMinerado);
+        case 2:
+            int numBloco;
+            printf("Insira o bloco que deseja imprimir: ");
+            scanf("%d", &numBloco);
+            BlocoMinerado blocoImprimir = buscaBloco(numBloco);
+            imprimirBloco(&blocoImprimir);
+            break;
 
-            memcpy(guarda_hash, blocoMinerado.hash, SHA256_DIGEST_LENGTH);
+        case 3:
+            // impressao do saldo de um determinado endereco
+            unsigned char endVerificacao = 0;
+            printf("Insira o endereco que deseja verificar o saldo: ");
+            scanf("%hhu", &endVerificacao);
+            verificaSaldoBitcoin(endVerificacao, saldoBitcoin);
+            break;
 
-            memcpy((vetorBlocosMinerados + num_bloco), &blocoMinerado, sizeof(BlocoMinerado));
+        case 4:
+            enderecoMaisBitcoin(saldoBitcoin);
+            break;
+
+        case 5:
+            for (unsigned int i = 0; i < 256; i++)
+            {
+                raiz = inserirABP(raiz, i, saldoBitcoin);
+            }
+            imprimirABP(raiz);
+            break;
+
+        case 6:
+            imprimirSaldos(saldoBitcoin);
+            break;
+
+        default:
+            printf("Insira uma opcao valida!");
+            break;
         }
-        break;
-
-    case 2:
-        salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
-        break;
-
-    case 3:
-        int numBloco;
-        printf("Insira o bloco que deseja imprimir: ");
-        scanf("%d", &numBloco);
-        BlocoMinerado blocoImprimir = buscaBloco(numBloco);
-        imprimirBloco(&blocoImprimir);
-        break;
-
-    case 4:
-        // impressao do saldo de um determinado endereco
-
-    case 5:
-        enderecoMaisBitcoin(saldoBitcoin);
-        break;
-
-    case 6:
-        for (unsigned int i = 0; i < 256; i++)
-        {
-            raiz = inserirABP(raiz, i, saldoBitcoin);
-        }
-        imprimirABP(raiz);
-        break;
-
-    default:
-        printf("Insira uma opcao valida!");
-        break;
     }
-
-    // imprimirSaldos(saldoBitcoin); //imprime todos os saldos
-
     return 0;
 }
 
