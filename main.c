@@ -93,6 +93,20 @@ void salvarBlocoMinerado(BlocoMinerado *blocoMinerado, int qtdBlocos)
     }
 }
 
+void salvarSaldoBitcoin(unsigned int *saldoBitcoin)//funçao que salva vetor de saldobitcoin em arquivo binario saldobitcoin[256]
+{
+    FILE *arquivo = fopen("saldobitcoin.bin", "wb");
+    fwrite(saldoBitcoin, sizeof(*saldoBitcoin), 256, arquivo);
+    fclose(arquivo);
+}
+
+void pegarSaldoBitcoin(unsigned int *saldoBitcoin)//funcao que pega as informaçoes do arquivo saldobitcoin.bin e salva no vetor saldobitcoin[256]
+{
+    FILE *arquivo = fopen("saldobitcoin.bin", "rb");
+    fread(saldoBitcoin, sizeof(*saldoBitcoin), 256, arquivo);
+    fclose(arquivo);
+}
+
 BlocoMinerado buscaBloco(int numeroBloco)
 { // função que busca um bloco no arquivo binario
 
@@ -205,9 +219,8 @@ void imprimirABP(ABP *raiz)
     }
 }
 
-void excluirArquivos()
+void excluirArquivoBlockchain()
 {
-
     int exclui = 1;
     printf("0 - NAO EXCLUIR ARQUIVOS ANTERIORES\n1 - EXCLUIR ARQUIVOS ANTERIORES\n");
     scanf("%d", &exclui);
@@ -215,6 +228,17 @@ void excluirArquivos()
     if (exclui)
     {
         remove("blockchain.bin");
+    }
+}
+
+void excluirArquivoSaldo(){
+    int exclui = 1;
+    printf("0 - NAO EXCLUIR ARQUIVO SALDO\n1 - EXCLUIR ARQUIVO SALDO\n");
+    scanf("%d", &exclui);
+
+    if (exclui)
+    {
+        remove("saldobitcoin.bin");
     }
 }
 
@@ -234,7 +258,7 @@ int main()
     printf("Mas ao minerar novamente, exclua o arquivo blockchain.bin!\n");
 
     int op = 0;
-    while (op != 7)
+    while (op != 9)
     {
         printf("MENU: \n");
         printf("1 - Minerar e Salvar Blocos \n");
@@ -243,17 +267,20 @@ int main()
         printf("4 - Endereco Com Mais Bitcoins \n");
         printf("5 - Imprimir em Ordem Crescente \n");
         printf("6 - Imprimir todos os saldos \n");
-        printf("7 - Sair \n");
+        printf("7 - Salvar saldos em arquivo \n");
+        printf("8 - Carregar saldos de arquivo \n");
+        printf("9 - Sair \n");
         scanf("%d", &op);
         switch (op)
         {
         case 1:
             // pedir ao usuario quantos blocos deseja minerar
-            excluirArquivos();
+            excluirArquivoBlockchain();
 
             int qtdBlocos;
             printf("Quantos blocos deseja minerar? ");
             scanf("%d", &qtdBlocos);
+            printf("Minerando...\n");
 
             BlocoMinerado *vetorBlocosMinerados = (BlocoMinerado *)malloc(qtdBlocos * sizeof(BlocoMinerado)); // aloca espaço para o vetor de blocos minerados
 
@@ -303,7 +330,7 @@ int main()
 
         case 2:
             int numBloco;
-            printf("Insira o bloco que deseja imprimir: ");
+            printf("Insira o bloco que deseja imprimir: \n");
             scanf("%d", &numBloco);
             BlocoMinerado blocoImprimir = buscaBloco(numBloco);
             imprimirBloco(&blocoImprimir);
@@ -312,7 +339,7 @@ int main()
         case 3:
             // impressao do saldo de um determinado endereco
             unsigned char endVerificacao = 0;
-            printf("Insira o endereco que deseja verificar o saldo: ");
+            printf("Insira o endereco que deseja verificar o saldo: \n");
             scanf("%hhu", &endVerificacao);
             verificaSaldoBitcoin(endVerificacao, saldoBitcoin);
             break;
@@ -333,6 +360,16 @@ int main()
             imprimirSaldos(saldoBitcoin);
             break;
 
+        case 7:
+            excluirArquivoSaldo();
+            salvarSaldoBitcoin(saldoBitcoin);
+            printf("Saldo salvo com sucesso!\n");
+            break;
+        case 8:
+            pegarSaldoBitcoin(saldoBitcoin);
+            printf("Saldo carregado com sucesso!\n");
+            break;
+
         default:
             printf("Insira uma opcao valida!");
             break;
@@ -340,52 +377,3 @@ int main()
     }
     return 0;
 }
-
-/*
-⠀
-⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠛⠛⠛⠋⠉⠈⠉⠉⠉⠉⠛⠻⢿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⡿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⢿⣿⣿⣿⣿
-⣿⣿⣿⣿⡏⣀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠙⢿⣿⣿
-⣿⣿⣿⢏⣴⣿⣷⠀⠀⠀⠀⠀⢾⣿⣿⣿⣿⣿⣿⡆⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿
-⣿⣿⣟⣾⣿⡟⠁⠀⠀⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣷⢢⠀⠀⠀⠀⠀⠀⠀⢸⣿
-⣿⣿⣿⣿⣟⠀⡴⠄⠀⠀⠀⠀⠀⠀⠙⠻⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⣿
-⣿⣿⣿⠟⠻⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠶⢴⣿⣿⣿⣿⣿⣧⠀⠀⠀⠀⠀⠀⣿
-⣿⣁⡀⠀⠀⢰⢠⣦⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⣿⣿⡄⠀⣴⣶⣿⡄⣿
-⣿⡋⠀⠀⠀⠎⢸⣿⡆⠀⠀⠀⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⠗⢘⣿⣟⠛⠿⣼
-⣿⣿⠋⢀⡌⢰⣿⡿⢿⡀⠀⠀⠀⠀⠀⠙⠿⣿⣿⣿⣿⣿⡇⠀⢸⣿⣿⣧⢀⣼
-⣿⣿⣷⢻⠄⠘⠛⠋⠛⠃⠀⠀⠀⠀⠀⢿⣧⠈⠉⠙⠛⠋⠀⠀⠀⣿⣿⣿⣿⣿
-⣿⣿⣧⠀⠈⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠟⠀⠀⠀⠀⢀⢃⠀⠀⢸⣿⣿⣿⣿
-⣿⣿⡿⠀⠴⢗⣠⣤⣴⡶⠶⠖⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡸⠀⣿⣿⣿⣿
-⣿⣿⣿⡀⢠⣾⣿⠏⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠉⠀⣿⣿⣿⣿
-⣿⣿⣿⣧⠈⢹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⣿⣿
-⣿⣿⣿⣿⡄⠈⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣦⣄⣀⣀⣀⣀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠙⣿⣿⡟⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⠁⠀⠀⠹⣿⠃⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⢐⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⠿⠛⠉⠉⠁⠀⢻⣿⡇⠀⠀⠀⠀⠀⠀⢀⠈⣿⣿⡿⠉⠛⠛⠛⠉⠉
-⣿⡿⠋⠁⠀⠀⢀⣀⣠⡴⣸⣿⣇⡄⠀⠀⠀⠀⢀⡿⠄⠙⠛⠀⣀⣠⣤⣤⠄⠀
-
-*/
-
-/*
-
-===============================> CONSULTAS QUE DEVEM SER SUPORTADAS PELO CÓDIGO FONTE
-Após a mineração, O programa simulador em C (ambiente gcc/linux) deverá suportar os seguintes consultas LENDO OS DADOS DIRETAMENTE DO ARQUIVO PRODUZIDO:
-
-1.Dado o número do bloco imprimir todos seus dados, incluindo o hash válido no formato hexadecimal.
-
-2.Quantos bitcoins um dado endereço tem?
-
-3.Qual o endereço tem mais bitcoins?
-
-4.Listar endereços com respectivas quantidades de bitcoins em ordem crescente.
-
-RESTRIÇÕES.
-. Para dúvidas cujas respostas não se encontrem neste enunciado, a equipe deverá ter iniciativa para tomar suas próprias decisões (velando sempre pela eficiência do código) e sujeitando tais
-decisões às exigências mínimas do enunciado. Neste caso, um breve relatório deverá ser elaborado para explicar as tomadas de decisões do projeto.
- Permanencendo as dúvidas, o professor deverá ser consultado.
-*/
