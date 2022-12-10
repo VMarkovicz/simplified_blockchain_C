@@ -91,7 +91,7 @@ void salvarBlocoMinerado(BlocoMinerado *blocoMinerado, int qtdBlocos)
 void salvarBlocoMineradoTxt(BlocoMinerado *blocoMinerado, int qtdBlocos)
 {
     FILE *arquivo = fopen("blockchain.txt", "a");
-    for (int i = 0; i < qtdBlocos; i += 2)
+    for (int i = 1; i <= qtdBlocos; i += 2)
     {
         fprintf(arquivo, "Bloco %u - Nonce: %u\nHash: ", blocoMinerado[i].bloco.numero, blocoMinerado[i].bloco.nonce);
         for (int j = 0; j < SHA256_DIGEST_LENGTH; j++)
@@ -104,7 +104,7 @@ void salvarBlocoMineradoTxt(BlocoMinerado *blocoMinerado, int qtdBlocos)
             fprintf(arquivo, "%02x", blocoMinerado[i].bloco.hashAnterior[j]);
         }
         fprintf(arquivo, "\n\n");
-        if (i + 1 < qtdBlocos){
+        if (i + 1 <= qtdBlocos){
             fprintf(arquivo, "Bloco %u - Nonce: %u\nHash: ", blocoMinerado[i + 1].bloco.numero, blocoMinerado[i + 1].bloco.nonce);
             for (int j = 0; j < SHA256_DIGEST_LENGTH; j++)
             {
@@ -313,13 +313,13 @@ int main()
 
             BlocoMinerado *vetorBlocosMinerados = (BlocoMinerado *)malloc(qtdBlocos * sizeof(BlocoMinerado)); // aloca espaço para o vetor de blocos minerados
 
-            for (int num_bloco = 0; num_bloco < qtdBlocos; num_bloco++)
+            for (int num_bloco = 1; num_bloco <= qtdBlocos; num_bloco++)
             {
 
                 blocoAMinerar.numero = num_bloco;
                 blocoAMinerar.nonce = 0;
 
-                if (num_bloco == 0)
+                if (num_bloco == 1)
                 {
                     memset(blocoAMinerar.hashAnterior, 0, SHA256_DIGEST_LENGTH);
                 }
