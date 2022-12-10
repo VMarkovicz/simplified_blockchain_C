@@ -27,6 +27,28 @@ struct ABP
     struct ABP *dir;
 } typedef ABP;
 
+void minerarBlocoMenorComplex(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado)
+{
+
+    unsigned char hash[SHA256_DIGEST_LENGTH]; // vetor que armazenará o resultado do hash. Tamanho definido pela libssl
+
+    SHA256((unsigned char *)blocoAMinerar, sizeof(*blocoAMinerar), hash); // gera hash do bloco
+
+    while (hash[0] != 0 || hash[1] != 0)
+    { // enquanto o hash não começar com 2 zeros
+        if (blocoAMinerar->nonce < 4294967295)
+        {
+            blocoAMinerar->nonce++;                                               // incrementa o nonce
+            SHA256((unsigned char *)blocoAMinerar, sizeof(*blocoAMinerar), hash); // gera hash do bloco
+        }
+    }
+
+    // copia o bloco para o bloco minerado
+    blocoMinerado->bloco = *blocoAMinerar;
+    // copia o hash para o bloco minerado
+    memcpy(blocoMinerado->hash, hash, SHA256_DIGEST_LENGTH);
+}
+
 void minerarBloco(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado)
 {
 
@@ -45,33 +67,7 @@ void minerarBloco(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado)
         {
             printf("Nonce chegou ao limite. Abortando operação.\n");
             // chama outra função com menos complexidade
-        }
-    }
-
-    // copia o bloco para o bloco minerado
-    blocoMinerado->bloco = *blocoAMinerar;
-    // copia o hash para o bloco minerado
-    memcpy(blocoMinerado->hash, hash, SHA256_DIGEST_LENGTH);
-}
-
-void minerarBlocoMenorComplex(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *blocoMinerado)
-{
-
-    unsigned char hash[SHA256_DIGEST_LENGTH]; // vetor que armazenará o resultado do hash. Tamanho definido pela libssl
-
-    SHA256((unsigned char *)blocoAMinerar, sizeof(*blocoAMinerar), hash); // gera hash do bloco
-
-    while (hash[0] != 0 || hash[1] != 0)
-    { // enquanto o hash não começar com 2 zeros
-        if (blocoAMinerar->nonce < 4294967295)
-        {
-            blocoAMinerar->nonce++;                                               // incrementa o nonce
-            SHA256((unsigned char *)blocoAMinerar, sizeof(*blocoAMinerar), hash); // gera hash do bloco
-        }
-        else
-        {
-            printf("Nonce chegou ao limite. Abortando operação.\n");
-            // aborta operação
+            minerarBlocoMenorComplex(blocoAMinerar, blocoMinerado);
         }
     }
 
@@ -84,13 +80,46 @@ void minerarBlocoMenorComplex(BlocoNaoMinerado *blocoAMinerar, BlocoMinerado *bl
 
 void salvarBlocoMinerado(BlocoMinerado *blocoMinerado, int qtdBlocos)
 { // função que guarda o bloco minerado em um arquivo binario
+    FILE *arquivo = fopen("blockchain.bin", "ab");
+    for (int i = 0; i < qtdBlocos; i += 2) { 
+        fwrite(&blocoMinerado[i], sizeof(*blocoMinerado), 2, arquivo);
+    }
+    fclose(arquivo);
+}
 
+//funcao que guarda o bloco minerado em um arquivo txt de 2 em 2 blocos
+void salvarBlocoMineradoTxt(BlocoMinerado *blocoMinerado, int qtdBlocos)
+{
+    FILE *arquivo = fopen("blockchain.txt", "a");
     for (int i = 0; i < qtdBlocos; i += 2)
     {
-        FILE *arquivo = fopen("blockchain.bin", "ab");
-        fwrite(&blocoMinerado[i], sizeof(*blocoMinerado), 2, arquivo);
-        fclose(arquivo);
+        fprintf(arquivo, "Bloco %u - Nonce: %u\nHash: ", blocoMinerado[i].bloco.numero, blocoMinerado[i].bloco.nonce);
+        for (int j = 0; j < SHA256_DIGEST_LENGTH; j++)
+        {
+            fprintf(arquivo, "%02x", blocoMinerado[i].hash[j]);
+        }
+        fprintf(arquivo, "\nHash anterior: ");
+        for (int j = 0; j < SHA256_DIGEST_LENGTH; j++)
+        {
+            fprintf(arquivo, "%02x", blocoMinerado[i].bloco.hashAnterior[j]);
+        }
+        fprintf(arquivo, "\n\n");
+        if (i + 1 < qtdBlocos){
+            fprintf(arquivo, "Bloco %u - Nonce: %u\nHash: ", blocoMinerado[i + 1].bloco.numero, blocoMinerado[i + 1].bloco.nonce);
+            for (int j = 0; j < SHA256_DIGEST_LENGTH; j++)
+            {
+                fprintf(arquivo, "%02x", blocoMinerado[i + 1].hash[j]);
+            }
+            fprintf(arquivo, "\nHash anterior: ");
+            for (int j = 0; j < SHA256_DIGEST_LENGTH; j++)
+            {
+                fprintf(arquivo, "%02x", blocoMinerado[i + 1].bloco.hashAnterior[j]);
+            }
+            fprintf(arquivo, "\n\n");
+        }
+            
     }
+    fclose(arquivo);
 }
 
 void salvarSaldoBitcoin(unsigned int *saldoBitcoin)//funçao que salva vetor de saldobitcoin em arquivo binario saldobitcoin[256]
@@ -171,7 +200,6 @@ unsigned int verificaSaldoBitcoin(unsigned char endereco, unsigned int saldoBitc
 
 unsigned char enderecoMaisBitcoin(unsigned int saldoBitcoin[256])
 {
-
     unsigned int max = saldoBitcoin[0];
     unsigned char pos = 0;
     for (int i = 1; i < 256; i++)
@@ -182,7 +210,7 @@ unsigned char enderecoMaisBitcoin(unsigned int saldoBitcoin[256])
             pos = i;
         }
     }
-    printf("O endereco com maior saldo de BitCoin é %u, com %u BitCoins.\n", pos, max);
+    printf("\nO endereco com maior saldo de BitCoin é %u, com %u BitCoins.\n", pos, max);
     return pos;
 }
 
@@ -228,6 +256,7 @@ void excluirArquivoBlockchain()
     if (exclui)
     {
         remove("blockchain.bin");
+        remove("blockchain.txt");
     }
 }
 
@@ -260,7 +289,7 @@ int main()
     int op = 0;
     while (op != 9)
     {
-        printf("MENU: \n");
+        printf("\n\nMENU: \n");
         printf("1 - Minerar e Salvar Blocos \n");
         printf("2 - Imprimir Bloco \n");
         printf("3 - Imprimir Saldo \n");
@@ -326,6 +355,7 @@ int main()
                 memcpy((vetorBlocosMinerados + num_bloco), &blocoMinerado, sizeof(BlocoMinerado));
             }
             salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
+            salvarBlocoMineradoTxt(vetorBlocosMinerados, qtdBlocos);
             break;
 
         case 2:
