@@ -246,7 +246,7 @@ int main() {
 
     printf("Bem vindo ao simulador de blockchain!\n");
     printf("Lembre-se que voce deve salvar os blocos minerados para que eles sejam salvos na blockchain!\n");
-    printf("Se voce ja minerou alguma vez, nao esqueca de salvar o arquivo blockchain.bin para nao perder os blocos minerados anteriormente!\n");
+    printf("Se voce ja minerou alguma vez, nao esqueca de salvar o arquivo blockchain.bin e .txt para nao perder os blocos minerados anteriormente!\n");
     printf("Mas ao minerar novamente, exclua o arquivo blockchain.bin!\n");
 
     int op = 0;
@@ -272,12 +272,13 @@ int main() {
             scanf("%d", &qtdBlocos);
             printf("Minerando...\n");
 
-            BlocoMinerado *vetorBlocosMinerados = (BlocoMinerado *)malloc(qtdBlocos * sizeof(BlocoMinerado)); // aloca espaço para o vetor de blocos minerados
+            BlocoMinerado *vetorBlocosMinerados = (BlocoMinerado *)malloc(((qtdBlocos + 1) * sizeof(BlocoMinerado))); // aloca espaço para o vetor de blocos minerados
 
             for(int num_bloco = 1; num_bloco <= qtdBlocos; num_bloco++) {
 
                 blocoAMinerar.numero = num_bloco;
                 blocoAMinerar.nonce = 0;
+                //a
 
                 if(num_bloco == 1) {
                     memset(blocoAMinerar.hashAnterior, 0, SHA256_DIGEST_LENGTH);
@@ -286,13 +287,14 @@ int main() {
                     memcpy(blocoAMinerar.hashAnterior, guarda_hash, SHA256_DIGEST_LENGTH);
                 }
 
+                
                 unsigned char qtdTransacoes = (unsigned char)(1 + (genRandLong(&randNumber) % 61)); // gera aleatorio de 1 a 61
                 memset(blocoAMinerar.data, 0, sizeof(blocoAMinerar.data));
 
                 for(int i = 0; i < qtdTransacoes; i++) {
                     blocoAMinerar.data[i * 3] = (unsigned char)genRandLong(&randNumber) % 256;          // gera aleatorio de 0 a 255
                     blocoAMinerar.data[i * 3 + 1] = (unsigned char)genRandLong(&randNumber) % 256;      // gera aleatorio de 0 a 255
-                    blocoAMinerar.data[i * 3 + 2] = (unsigned char)(1 + genRandLong(&randNumber) % 51); // gera aleatorio de 1 a 50
+                    blocoAMinerar.data[i * 3 + 2] = (unsigned char)(1 + genRandLong(&randNumber) % 50); // gera aleatorio de 1 a 50
 
                     if(saldoBitcoin[blocoAMinerar.data[i]] >= blocoAMinerar.data[i + 2]) {
                         saldoBitcoin[blocoAMinerar.data[i]] -= blocoAMinerar.data[i + 2];
@@ -308,7 +310,7 @@ int main() {
 
                 memcpy(guarda_hash, blocoMinerado.hash, SHA256_DIGEST_LENGTH);
 
-                memcpy((vetorBlocosMinerados + num_bloco), &blocoMinerado, sizeof(BlocoMinerado));
+                vetorBlocosMinerados[num_bloco] = blocoMinerado;
             }
             salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
             salvarBlocoMineradoTxt(vetorBlocosMinerados, qtdBlocos);
@@ -355,10 +357,6 @@ int main() {
         case 8:
             pegarSaldoBitcoin(saldoBitcoin);
             printf("Saldo carregado com sucesso!\n");
-            break;
-
-        case 9:
-            printf("Saindo...\n");
             break;
 
         default:
