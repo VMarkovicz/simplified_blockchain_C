@@ -231,6 +231,7 @@ void excluirArquivoSaldo() {
 
     if(exclui) {
         remove("saldobitcoin.bin");
+        remove("saldobitcoin.txt"); 
     }
 }
 
@@ -261,7 +262,7 @@ int main() {
         printf("8 - Carregar saldos de arquivo \n");
         printf("9 - Sair \n");
         scanf("%d", &op);
-        switch (op) {
+        switch(op) {
         case 1:
             // pedir ao usuario quantos blocos deseja minerar
             excluirArquivoBlockchain();
@@ -288,10 +289,10 @@ int main() {
                 unsigned char qtdTransacoes = (unsigned char)(1 + (genRandLong(&randNumber) % 61)); // gera aleatorio de 1 a 61
                 memset(blocoAMinerar.data, 0, sizeof(blocoAMinerar.data));
 
-                for(int i = 0; i < qtdTransacoes; i += 3) {
-                    blocoAMinerar.data[i] = (unsigned char)genRandLong(&randNumber) % 256;          // gera aleatorio de 0 a 255
-                    blocoAMinerar.data[i + 1] = (unsigned char)genRandLong(&randNumber) % 256;      // gera aleatorio de 0 a 255
-                    blocoAMinerar.data[i + 2] = (unsigned char)(1 + genRandLong(&randNumber) % 51); // gera aleatorio de 1 a 50
+                for(int i = 0; i < qtdTransacoes; i++) {
+                    blocoAMinerar.data[i * 3] = (unsigned char)genRandLong(&randNumber) % 256;          // gera aleatorio de 0 a 255
+                    blocoAMinerar.data[i * 3 + 1] = (unsigned char)genRandLong(&randNumber) % 256;      // gera aleatorio de 0 a 255
+                    blocoAMinerar.data[i * 3 + 2] = (unsigned char)(1 + genRandLong(&randNumber) % 51); // gera aleatorio de 1 a 50
 
                     if(saldoBitcoin[blocoAMinerar.data[i]] >= blocoAMinerar.data[i + 2]) {
                         saldoBitcoin[blocoAMinerar.data[i]] -= blocoAMinerar.data[i + 2];
@@ -311,9 +312,7 @@ int main() {
             }
             salvarBlocoMinerado(vetorBlocosMinerados, qtdBlocos);
             salvarBlocoMineradoTxt(vetorBlocosMinerados, qtdBlocos);
-            salvarSaldoBitcoin(saldoBitcoin);
-            salvarSaldoBitcoinTxt(saldoBitcoin);
-            printf("Saldo salvo com sucesso!\n");
+            printf("Blocos minerados com sucesso!\n");
             break;
 
         case 2:
@@ -350,11 +349,16 @@ int main() {
         case 7:
             excluirArquivoSaldo();
             salvarSaldoBitcoin(saldoBitcoin);
+            salvarSaldoBitcoinTxt(saldoBitcoin);
             printf("Saldo salvo com sucesso!\n");
             break;
         case 8:
             pegarSaldoBitcoin(saldoBitcoin);
             printf("Saldo carregado com sucesso!\n");
+            break;
+
+        case 9:
+            printf("Saindo...\n");
             break;
 
         default:
